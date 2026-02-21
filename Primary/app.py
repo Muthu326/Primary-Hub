@@ -18,19 +18,34 @@ from dotenv import load_dotenv
 # Load Local Environment Variables
 load_dotenv()
 
-# Performance Optimization: Cached Data Loading
-@st.cache_data
-def load_assets():
-    lang_path = os.path.join("assets", "languages.json")
-    math_path = os.path.join("assets", "math_patterns.json")
-    
-    with open(lang_path, "r", encoding="utf-8") as f:
-        langs = json.load(f)
-    with open(math_path, "r") as f:
-        math_pool = json.load(f)
-    return langs, math_pool
-
-LANGS, MATH_POOL = load_assets()
+# --- EMBEDDED DATA (to prevent FileNotFoundError on deployment) ---
+LANGS = {
+    "ui": {
+        "school_name": "Koilankulam Primary School / கோலியன்குளம் தொடக்கப்பள்ளி",
+        "celebration": "100th Year Celebration / 100வது ஆண்டு விழா",
+        "welcome": "Welcome to Primary Learn Hub / கற்றல் மையத்திற்கு வரவேற்பிறோம்",
+        "enter_token": "Enter Student Token / டோக்கனை உள்ளிடவும்",
+        "login_btn": "Login / உள்நுழைய 🚀",
+        "signup_btn": "Request New Access / புதிய அனுமதியைக் கோரவும் 📝",
+        "invalid_token": "Invalid or Pending Token / தவறான அல்லது நிலுவையில் உள்ள டோக்கன்",
+        "hello": "Hello / வணக்கம்",
+        "grade": "Grade / வகுப்பு",
+        "choose": "Explore / ஆராயுங்கள்",
+        "math": "Math / கணிதம் 🔢",
+        "aptitude": "Aptitude / மூளை திறன் 🧩",
+        "typing": "Typing / தட்டச்சு ⌨️",
+        "listening": "Listening / கேட்டல் 🎧",
+        "writing": "Writing / எழுதுதல் ✍️",
+        "speaking": "Speaking / பேசுதல் 🎤",
+        "parent": "Parent Corner / பெற்றோர் பகுதி",
+        "logout": "Logout / வெளியேறு",
+        "back": "Dashboard / முகப்பு"
+    }
+}
+MATH_POOL = {
+    "addition": [{"n1": 5, "n2": 3, "ans": 8}, {"n1": 10, "n2": 5, "ans": 15}],
+    "subtraction": [{"n1": 10, "n2": 4, "ans": 6}, {"n1": 15, "n2": 7, "ans": 8}]
+}
 B_LANG = LANGS['ui']
 
 # Page Config
