@@ -1,0 +1,30 @@
+{
+    "ui": {
+        "school_name": "Koilankulam Primary School / கோலியன்குளம் தொடக்கப்பள்ளி",
+        "celebration": "100th Year Celebration / 100வது ஆண்டு விழா",
+        "welcome": "Welcome to Primary Learn Hub / கற்றல் மையத்திற்கு வரவேற்பிறோம்",
+        "enter_token": "Enter Student Token / டோக்கனை உள்ளிடவும்",
+        "login_btn": "Login / உள்நுழைய 🚀",
+        "signup_btn": "Request New Access / புதிய அனுமதியைக் கோரவும் 📝",
+        "invalid_token": "Invalid or Pending Token / தவறான அல்லது நிலுவையில் உள்ள டோக்கன்",
+        "hello": "Hello / வணக்கம்",
+        "grade": "Grade / வகுப்பு",
+        "choose": "Explore / ஆராயுங்கள்",
+        "math": "Math / கணிதம் 🔢",
+        "aptitude": "Aptitude / மூளை திறன் 🧩",
+        "typing": "Typing / தட்டச்சு ⌨️",
+        "listening": "Listening / கேட்டல் 🎧",
+        "writing": "Writing / எழுதுதல் ✍️",
+        "speaking": "Speaking / பேசுதல் 🎤",
+        "parent": "Parent Corner / பெற்றோர் பகுதி",
+        "logout": "Logout / வெளியேறு",
+        "back": "Dashboard / முகப்பு"
+    },
+    "modules": {
+        "math_title": "Mathematics / கணிதம் 🔢",
+        "math_desc": "Let's solve some fun problems! / சில கணிதப் புதிர்களைத் தீர்ப்போம்!",
+        "aptitude_title": "Aptitude / மூளை திறன் 🧩",
+        "writing_title": "Writing Skill / எழுத்துப் பயிற்சி ✍️",
+        "speaking_title": "Speaking Skill (Stage Fear) / மேடை பேச்சுத் திறன் 🎤"
+    }
+}
