@@ -214,7 +214,7 @@ def render_admin_panel():
         <div style='background: #e3f2fd; padding: 20px; border-radius: 15px; border: 2px solid #1565c0;'>
             <h3 style='color: #1565c0; margin-top: 0;'>🌐 Global Website Access</h3>
             <p>If you have deployed to the web, your permanent URL is here:</p>
-            <h2 style='color: #0d47a1;'>https://primary-learn-hub.streamlit.app</h2>
+            <h2 style='color: #0d47a1;'>https://primary-learn-koliyankulam.streamlit.app</h2>
             <p style='font-size: 0.9rem; color: #555;'><i>(This works from anywhere in the world with internet)</i></p>
         </div>
         """, unsafe_allow_html=True)

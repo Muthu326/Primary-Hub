@@ -15,7 +15,7 @@ Follow these 3 steps to get your school's app online permanently for free:
 
 ### 3. Your Live Website is Ready! 🚀
 - In a few minutes, you will get a permanent URL like:
-  `https://primary-learn-hub.streamlit.app`
+  `https://primary-learn-koliyankulam.streamlit.app`
 - You can share this link with all students, parents, and teachers!
 
 ---
