@@ -3,8 +3,7 @@ import random
 from utils.database import save_result
 
 def render_listening_module(language, token):
-    # Seed based on token to ensure unique experience per student
-    random.seed(token)
+    # random.seed(token)
     import time
     
     st.markdown("""
@@ -17,6 +16,8 @@ def render_listening_module(language, token):
     if 'listen_q' not in st.session_state:
         st.session_state.listen_q = 1
         st.session_state.listen_score = 0
+        st.session_state.listen_answered = False
+        st.session_state.listen_result = None
 
     stories_pool = [
         {"title": "The Thirsty Crow", "story": "Once there was a clever crow. He was thirsty. He found a pot with little water. He dropped pebbles to raise the water level.", "q": "What did the crow use?", "options": ["Pebbles", "Sticks", "Sand"], "ans": "Pebbles", "level": 1},
@@ -50,20 +51,30 @@ def render_listening_module(language, token):
             st.divider()
             st.write(f"**{story['q']}**")
             
-            user_choice = st.radio("Select Answer:", story['options'], key=f"listen_in_{st.session_state.listen_q}")
+            user_choice = st.radio("Select Answer:", story['options'], key=f"listen_in_{st.session_state.listen_q}", disabled=st.session_state.listen_answered)
             
-            if st.button("Submit Answer", use_container_width=True):
-                if user_choice == story['ans']:
+            if not st.session_state.listen_answered:
+                if st.button("Submit Answer", use_container_width=True):
+                    st.session_state.listen_answered = True
+                    if user_choice == story['ans']:
+                        st.session_state.listen_result = "correct"
+                        st.session_state.listen_score += 1
+                    else:
+                        st.session_state.listen_result = "incorrect"
+                    st.rerun()
+            else:
+                if st.session_state.listen_result == "correct":
                     st.success("Correct! 🎉")
-                    st.session_state.listen_score += 1
                 else:
                     st.error(f"Try again! (Correct: {story['ans']})")
                 
-                st.session_state.listen_q += 1
-                if st.session_state.listen_q > 10:
-                    save_result(token, "Listening", st.session_state.listen_score)
-                time.sleep(1)
-                st.rerun()
+                if st.button("Next Story / அடுத்த கதை ➡️", use_container_width=True):
+                    st.session_state.listen_q += 1
+                    st.session_state.listen_answered = False
+                    st.session_state.listen_result = None
+                    if st.session_state.listen_q > 10:
+                        save_result(token, "Listening", st.session_state.listen_score)
+                    st.rerun()
     else:
         st.success("Great Observation! You finished the Listening challenge!")
         st.balloons()

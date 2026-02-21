@@ -3,8 +3,7 @@ import random
 from utils.database import save_result
 
 def render_writing_module(language, token):
-    # Seed based on token to ensure unique experience per student
-    random.seed(token)
+    # random.seed(token)
     import time
     
     st.markdown("""
@@ -17,6 +16,7 @@ def render_writing_module(language, token):
     if 'write_q' not in st.session_state:
         st.session_state.write_q = 1
         st.session_state.write_sentences = []
+        st.session_state.write_answered = False
 
     prompts = [
         "What is your name? / உன் பெயர் என்ன?",
@@ -48,18 +48,25 @@ def render_writing_module(language, token):
             
         with col2:
             st.subheader(f"Step {st.session_state.write_q}: {prompts[st.session_state.write_q-1]}")
-            user_text = st.text_input("Type your sentence here... / இங்கே எழுதவும்...", key=f"write_in_{st.session_state.write_q}")
+            user_text = st.text_input("Type your sentence here... / இங்கே எழுதவும்...", key=f"write_in_{st.session_state.write_q}", disabled=st.session_state.write_answered)
             
-            if st.button("Add to Story / கதையில் சேர்க்கவும்", use_container_width=True):
-                if len(user_text.strip()) > 3:
-                    st.session_state.write_sentences.append(user_text)
+            if not st.session_state.write_answered:
+                if st.button("Add to Story / கதையில் சேர்க்கவும்", use_container_width=True):
+                    if len(user_text.strip()) > 3:
+                        st.session_state.write_temp_text = user_text
+                        st.session_state.write_answered = True
+                        st.rerun()
+                    else:
+                        st.warning("Please write a bit more! / தயவுசெய்து இன்னும் கொஞ்சம் எழுதவும்.")
+            else:
+                st.success("Great sentence! / அருமையான வாக்கியம்! ✨")
+                if st.button("Next Sentence / அடுத்த வரி ➡️", use_container_width=True):
+                    st.session_state.write_sentences.append(st.session_state.write_temp_text)
                     st.session_state.write_q += 1
+                    st.session_state.write_answered = False
                     if st.session_state.write_q > 10:
                         save_result(token, "Writing", 100)
-                    time.sleep(0.5)
                     st.rerun()
-                else:
-                    st.warning("Please write a bit more! / தயவுசெய்து இன்னும் கொஞ்சம் எழுதவும்.")
     else:
         st.success("Author! You finished your 10-sentence story!")
         st.balloons()

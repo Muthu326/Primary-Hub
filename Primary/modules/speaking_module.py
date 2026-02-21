@@ -3,8 +3,7 @@ import random
 from utils.database import save_result
 
 def render_speaking_module(language, token):
-    # Seed based on token to ensure unique experience per student
-    random.seed(token)
+    # random.seed(token)
     import time
     
     st.markdown("""
@@ -17,11 +16,12 @@ def render_speaking_module(language, token):
     if 'speak_q' not in st.session_state:
         st.session_state.speak_q = 1
         st.session_state.speak_score = 0
+        st.session_state.speak_answered = False
 
     steps = [
         {"topic": "Hand Washing (Class 1) / கைகளை கழுவுதல்", "ta": "சுத்தம் மற்றும் ஆரோக்கியம்", "points": ["நாம் தினமும் கைகளை கழுவ வேண்டும். / We must wash hands daily.", "சுத்தமாக இருந்தால் நோய் வராது. / Cleanliness prevents disease.", "முடிவு: சுத்தம் = ஆரோக்கியம் / Conclusion: Cleanliness = Health"]},
         {"topic": "Sharing with Friends (Class 2) / பகிர்ந்து கொள்ளுதல்", "ta": "நட்பு மற்றும் ஒற்றுமை", "points": ["பகிர்ந்தால் நட்பு அதிகரிக்கும். / Sharing increases friendship.", "பகிர்ந்து கொள்வது நல்ல பழக்கம். / Sharing is a good habit.", "முடிவு: பகிர்வு = நட்பு / Conclusion: Sharing = Friendship"]},
-        {"topic": "Healthy Food (Class 3) / ஆரோக்கியமான உணவு", "ta": "சத்தான உணவு", "points": ["பழங்கள், காய்கறிகள் சாப்பிட்டால் உடல் ஆரோக்கியமாகும். / Fruits and vegetables make the body healthy.", "சத்தான உணவு நல்ல உடல் கொடுக்கும். / Nutritious food gives a healthy body.", "முடிவு: சத்தான உணவு = நல்ல உடல் / Conclusion: Healthy Food = Healthy Body"]},
+        {"topic": "Healthy Food (Class 3) / ஆரோக்கியமான உணவு", "ta": "சத்தான உணவு", "points": ["பழங்கள், காயறிகள் சாப்பிட்டால் உடல் ஆரோக்கியமாகும். / Fruits and vegetables make the body healthy.", "சத்தான உணவு நல்ல உடல் கொடுக்கும். / Nutritious food gives a healthy body.", "முடிவு: சத்தான உணவு = நல்ல உடல் / Conclusion: Healthy Food = Healthy Body"]},
         {"topic": "Effort without Fear (Class 4) / முயற்சி", "ta": "தன்னம்பிக்கை மற்றும் பொறுமை", "points": ["தோல்வி வந்தாலும் பயப்பட வேண்டாம். / Don't be afraid of failure.", "மீண்டும் முயற்சி செய்தால் வெற்றி வரும். / Success comes with repeated effort.", "முடிவு: முயற்சி = வெற்றி / Conclusion: Effort = Success"]},
         {"topic": "Self-Confidence (Class 5) / தன்னம்பிக்கை", "ta": "நம்பிக்கை மற்றும் சாதனை", "points": ["நான் செய்ய முடியும் என்று தினமும் சொல்லுதல். / Say 'I can do it' every day.", "தன்னம்பிக்கை இருந்தால் சாதனைகள் செய்யலாம். / Confidence leads to achievements.", "முடிவு: தன்னம்பிக்கை = வெற்றி / Conclusion: Confidence = Success"]},
         {"topic": "Introduce Yourself / உங்களைப் பற்றி", "ta": "அறிமுகம்", "points": ["My name is...", "I am studying in grade..."]},
@@ -52,13 +52,19 @@ def render_speaking_module(language, token):
                 st.write(f"✅ {p}")
             
             st.divider()
-            if st.button("I Spoke Clearly! / நான் தெளிவாகப் பேசினேன்!", use_container_width=True):
-                st.session_state.speak_score += 1
-                st.session_state.speak_q += 1
-                if st.session_state.speak_q > 10:
-                    save_result(token, "Speaking", 100)
-                time.sleep(0.5)
-                st.rerun()
+            if not st.session_state.speak_answered:
+                if st.button("I Spoke Clearly! / நான் தெளிவாகப் பேசினேன்!", use_container_width=True):
+                    st.session_state.speak_answered = True
+                    st.session_state.speak_score += 1
+                    st.rerun()
+            else:
+                st.success("Well done! Confidence is key! / நன்று! தன்னம்பிக்கையே முதல் படி! 🌟")
+                if st.button("Next Step / அடுத்த படி ➡️", use_container_width=True):
+                    st.session_state.speak_q += 1
+                    st.session_state.speak_answered = False
+                    if st.session_state.speak_q > 10:
+                        save_result(token, "Speaking", 100)
+                    st.rerun()
     else:
         st.success("Orator! You finished the Speaking challenge!")
         st.balloons()

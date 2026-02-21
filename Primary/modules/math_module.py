@@ -5,8 +5,8 @@ import os
 from utils.database import save_result
 
 def render_math_module(language, token):
-    # Performance & Uniqueness: Seeded Randomization
-    random.seed(token)
+    # Remove static seed to ensure questions are different every time
+    # random.seed(token) 
     import time
     
     st.markdown("""
@@ -16,9 +16,12 @@ def render_math_module(language, token):
     </div>
     """, unsafe_allow_html=True)
     
+    # Initialize session state
     if 'math_q' not in st.session_state:
         st.session_state.math_q = 1
         st.session_state.math_score = 0
+        st.session_state.math_answered = False
+        st.session_state.math_result = None
         generate_new_math_q(token, st.session_state.math_q)
 
     if st.session_state.math_q <= 10:
@@ -43,22 +46,35 @@ def render_math_module(language, token):
             st.markdown("#### Solve Here / இங்கே தீர்க்கவும்")
             st.info(f"### Question / கேள்வி: **{q['question']}**")
             
-            user_ans = st.number_input("Your answer / உங்கள் பதில்:", value=0, key=f"math_ans_{st.session_state.math_q}")
+            # Disable input if already answered to prevent changing answer
+            user_ans = st.number_input("Your answer / உங்கள் பதில்:", value=0, key=f"math_ans_{st.session_state.math_q}", disabled=st.session_state.math_answered)
             
-            if st.button("Check Answer / சரிபார்க்கவும்", use_container_width=True):
-                if user_ans == q['ans']:
+            if not st.session_state.math_answered:
+                if st.button("Check Answer / சரிபார்க்கவும்", use_container_width=True):
+                    st.session_state.math_answered = True
+                    if user_ans == q['ans']:
+                        st.session_state.math_result = "correct"
+                        st.session_state.math_score += 1
+                    else:
+                        st.session_state.math_result = "incorrect"
+                    st.rerun()
+            else:
+                # Show result message
+                if st.session_state.math_result == "correct":
                     st.success("Correct! Well done! / மிகச் சரி! 🎉")
-                    st.session_state.math_score += 1
                 else:
                     st.error(f"Not quite / தவறு. (Correct Ans: {q['ans']})")
-                    
-                st.session_state.math_q += 1
-                if st.session_state.math_q <= 10:
-                    generate_new_math_q(token, st.session_state.math_q)
-                else:
-                    save_result(token, "Mathematics", st.session_state.math_score)
-                time.sleep(1)
-                st.rerun()
+                
+                # Manual Next Button
+                if st.button("Next Question / அடுத்த கேள்வி ➡️", use_container_width=True):
+                    st.session_state.math_q += 1
+                    st.session_state.math_answered = False
+                    st.session_state.math_result = None
+                    if st.session_state.math_q <= 10:
+                        generate_new_math_q(token, st.session_state.math_q)
+                    else:
+                        save_result(token, "Mathematics", st.session_state.math_score)
+                    st.rerun()
     else:
         st.success("Great job! You finished the challenge! / நீங்கள் சவாலை முடித்துவிட்டீர்கள்!")
         st.balloons()

@@ -3,7 +3,7 @@ import random
 from utils.database import save_result
 
 def render_aptitude_module(language, token):
-    random.seed(token)
+    # random.seed(token)
     import time
     
     st.markdown("""
@@ -16,32 +16,37 @@ def render_aptitude_module(language, token):
     if 'apt_q' not in st.session_state:
         st.session_state.apt_q = 1
         st.session_state.apt_score = 0
+        st.session_state.apt_answered = False
+        st.session_state.apt_result = None
+        st.session_state.current_apt_q = None
 
     if st.session_state.apt_q <= 10:
-        # Define difficulty-based patterns
-        if st.session_state.apt_q <= 3: # Easy
-            patterns = [
-                ("🍎 🍌 🍎 🍌 ... ?", "🍎"),
-                ("⭐ 🌙 ⭐ 🌙 ... ?", "⭐"),
-                ("🐶 🐱 🐶 🐱 ... ?", "🐶"),
-                ("🌞 ☁️ 🌞 ☁️ ... ?", "🌞")
-            ]
-        elif st.session_state.apt_q <= 7: # Moderate
-            patterns = [
-                ("1 2 3 1 2 ... ?", "3"),
-                ("A B A B C A B ... ?", "A"),
-                ("Circle Square Circle ... ?", "Square"),
-                ("Up Down Up Down ... ?", "Up")
-            ]
-        else: # Hard
-            patterns = [
-                ("2 4 6 8 ... ?", "10"),
-                ("5 10 15 20 ... ?", "25"),
-                ("A C E G ... ?", "I"),
-                ("10 9 8 7 ... ?", "6")
-            ]
-            
-        pat, ans = random.choice(patterns)
+        # Generate question if not exists for this step
+        if st.session_state.current_apt_q is None:
+            if st.session_state.apt_q <= 3: # Easy
+                patterns = [
+                    ("🍎 🍌 🍎 🍌 ... ?", "🍎"),
+                    ("⭐ 🌙 ⭐ 🌙 ... ?", "⭐"),
+                    ("🐶 🐱 🐶 🐱 ... ?", "🐶"),
+                    ("🌞 ☁️ 🌞 ☁️ ... ?", "🌞")
+                ]
+            elif st.session_state.apt_q <= 7: # Moderate
+                patterns = [
+                    ("1 2 3 1 2 ... ?", "3"),
+                    ("A B A B C A B ... ?", "A"),
+                    ("Circle Square Circle ... ?", "Square"),
+                    ("Up Down Up Down ... ?", "Up")
+                ]
+            else: # Hard
+                patterns = [
+                    ("2 4 6 8 ... ?", "10"),
+                    ("5 10 15 20 ... ?", "25"),
+                    ("A C E G ... ?", "I"),
+                    ("10 9 8 7 ... ?", "6")
+                ]
+            st.session_state.current_apt_q = random.choice(patterns)
+
+        pat, ans = st.session_state.current_apt_q
         
         col1, col2 = st.columns([1, 2])
         
@@ -59,20 +64,32 @@ def render_aptitude_module(language, token):
             st.subheader("Which comes next? / அடுத்து வருவது எது?")
             st.info(f"### {pat}")
             
-            user_choice = st.text_input("Your Answer / உங்கள் பதில்:", placeholder="Type here...", key=f"apt_ans_{st.session_state.apt_q}")
+            user_choice = st.text_input("Your Answer / உங்கள் பதில்:", placeholder="Type here...", key=f"apt_ans_{st.session_state.apt_q}", disabled=st.session_state.apt_answered)
             
-            if st.button("Submit / சமர்ப்பிக்கவும்", use_container_width=True):
-                if user_choice.strip().upper() == ans.upper():
+            if not st.session_state.apt_answered:
+                if st.button("Submit / சமர்ப்பிக்கவும்", use_container_width=True):
+                    st.session_state.apt_answered = True
+                    if user_choice.strip().upper() == ans.upper():
+                        st.session_state.apt_result = "correct"
+                        st.session_state.apt_score += 1
+                    else:
+                        st.session_state.apt_result = "incorrect"
+                        st.session_state.apt_final_ans = ans # Store correct answer to show
+                    st.rerun()
+            else:
+                if st.session_state.apt_result == "correct":
                     st.success("Brilliant! / அற்புதம்! 🌟")
-                    st.session_state.apt_score += 1
                 else:
-                    st.error(f"Try harder! / மீண்டும் முயற்சி செய்! (Ans: {ans})")
+                    st.error(f"Try harder! / மீண்டும் முயற்சி செய்! (Ans: {st.session_state.apt_final_ans})")
                 
-                st.session_state.apt_q += 1
-                if st.session_state.apt_q > 10:
-                    save_result(token, "Aptitude", st.session_state.apt_score)
-                time.sleep(1)
-                st.rerun()
+                if st.button("Next Puzzle / அடுத்த புதிர் ➡️", use_container_width=True):
+                    st.session_state.apt_q += 1
+                    st.session_state.apt_answered = False
+                    st.session_state.apt_result = None
+                    st.session_state.current_apt_q = None
+                    if st.session_state.apt_q > 10:
+                        save_result(token, "Aptitude", st.session_state.apt_score)
+                    st.rerun()
     else:
         st.success("Puzzle Master! You finished the challenge! / நீங்கள் சவாலை முடித்துவிட்டீர்கள்!")
         st.balloons()

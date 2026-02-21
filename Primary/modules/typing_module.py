@@ -3,7 +3,7 @@ import random
 from utils.database import save_result
 
 def render_typing_module(language, token):
-    random.seed(token)
+    # random.seed(token)
     import time
     
     st.markdown("""
@@ -16,6 +16,8 @@ def render_typing_module(language, token):
     if 'type_q' not in st.session_state:
         st.session_state.type_q = 1
         st.session_state.type_score = 0
+        st.session_state.type_answered = False
+        st.session_state.type_result = None
         generate_new_typing_target(st.session_state.type_q)
 
     if st.session_state.type_q <= 10:
@@ -37,22 +39,32 @@ def render_typing_module(language, token):
             st.markdown("#### Type This / இதைத் தட்டச்சு செய்க")
             st.markdown(f"<div style='background: #fff; padding: 20px; border-radius: 10px; border: 2px dashed #009688; text-align: center; margin-bottom: 20px;'><h1 style='margin: 0; color: #009688; font-size: 60px;'>{target}</h1></div>", unsafe_allow_html=True)
             
-            user_input = st.text_input("Type here / இங்கே தட்டச்சு செய்யவும்:", key=f"type_in_{st.session_state.type_q}")
+            user_input = st.text_input("Type here / இங்கே தட்டச்சு செய்யவும்:", key=f"type_in_{st.session_state.type_q}", disabled=st.session_state.type_answered)
             
-            if st.button("Submit / சமர்ப்பிக்கவும்", use_container_width=True):
-                if user_input.strip() == target or user_input.strip().upper() == target.upper():
+            if not st.session_state.type_answered:
+                if st.button("Submit / சமர்ப்பிக்கவும்", use_container_width=True):
+                    st.session_state.type_answered = True
+                    if user_input.strip().upper() == target.upper():
+                        st.session_state.type_result = "correct"
+                        st.session_state.type_score += 1
+                    else:
+                        st.session_state.type_result = "incorrect"
+                    st.rerun()
+            else:
+                if st.session_state.type_result == "correct":
                     st.success("Perfect! / மிகச் சரி! 🎯")
-                    st.session_state.type_score += 1
                 else:
                     st.error(f"Try again! / மீண்டும் முயற்சிக்கவும்! (Expected: {target})")
                 
-                st.session_state.type_q += 1
-                if st.session_state.type_q <= 10:
-                    generate_new_typing_target(st.session_state.type_q)
-                else:
-                    save_result(token, "Typing", st.session_state.type_score)
-                time.sleep(1)
-                st.rerun()
+                if st.button("Next Step / அடுத்த படி ➡️", use_container_width=True):
+                    st.session_state.type_q += 1
+                    st.session_state.type_answered = False
+                    st.session_state.type_result = None
+                    if st.session_state.type_q <= 10:
+                        generate_new_typing_target(st.session_state.type_q)
+                    else:
+                        save_result(token, "Typing", st.session_state.type_score)
+                    st.rerun()
     else:
         st.success("Speed Demon! You finished the Typing challenge! / நீங்கள் தட்டச்சு சவாலை முடித்துவிட்டீர்கள்!")
         st.balloons()
