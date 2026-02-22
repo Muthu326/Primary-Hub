@@ -177,14 +177,22 @@ def render_admin_panel():
 
     with tab_appr:
         st.subheader(f"New {admin_div} Requests")
-        # pending_df was defined in the setup section of render_admin_panel
+        # pending_df contains full details from the tokens table
         if not pending_df.empty:
             for index, row in pending_df.iterrows():
-                with st.expander(f"Request from: {row['student_name']} (Grade {row['grade']})"):
-                    st.write(f"**Division:** {row['school_type']}")
-                    st.write(f"**Token ID:** `{row['token']}`")
-                    col1, col2 = st.columns(2)
-                    if col1.button(f"Approve {row['token']}", key=f"appr_{row['token']}"):
+                with st.expander(f"📌 {row['student_name']} (Grade {row['grade']}) - {row['token']}"):
+                    st.write("### Review Applicant Details")
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        st.write(f"👤 **Student Name:** {row['student_name']}")
+                        st.write(f"👨‍👩‍👦 **Parent's Name:** {row['parent_name']}")
+                    with col_b:
+                        st.write(f"📅 **Academic Year:** {row['academic_year']}")
+                        st.write(f"🏫 **Division:** {row['school_type']}")
+                    
+                    st.divider()
+                    col_btn1, col_btn2 = st.columns(2)
+                    if col_btn1.button(f"✅ Approve Access: {row['token']}", key=f"appr_{row['token']}", use_container_width=True):
                         conn = sqlite3.connect(DB_PATH)
                         c = conn.cursor()
                         c.execute("UPDATE tokens SET status='active' WHERE token=?", (row['token'],))
@@ -192,7 +200,7 @@ def render_admin_panel():
                         conn.close()
                         st.success(f"Approved {row['student_name']}!")
                         st.rerun()
-                    if col2.button(f"Reject {row['token']}", key=f"rej_{row['token']}"):
+                    if col_btn2.button(f"❌ Reject & Delete: {row['token']}", key=f"rej_{row['token']}", use_container_width=True):
                         conn = sqlite3.connect(DB_PATH)
                         c = conn.cursor()
                         c.execute("DELETE FROM tokens WHERE token=?", (row['token'],))
