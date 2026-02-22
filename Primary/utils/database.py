@@ -57,8 +57,8 @@ def init_db():
 def validate_token(token):
     conn = get_connection()
     c = conn.cursor()
-    # Return details regardless of status so app can handle feedback
-    c.execute("SELECT student_name, grade, status FROM tokens WHERE token=?", (token,))
+    # Return details including school_type for accurate dashboard routing
+    c.execute("SELECT student_name, grade, status, school_type FROM tokens WHERE token=?", (token,))
     result = c.fetchone()
     conn.close()
     return result

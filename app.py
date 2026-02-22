@@ -193,10 +193,17 @@ if not st.session_state.authenticated:
                     if clean_token:
                         user = validate_token(clean_token)
                         if user:
-                            name, grade, status = user
+                            # user now returns (name, grade, status, school_type)
+                            name, grade, status, school_type = user
                             if status in ['active', 'admin']:
                                 st.session_state.authenticated = True
-                                st.session_state.user_data = {'name': name, 'grade': grade, 'status': status, 'token': clean_token}
+                                st.session_state.user_data = {
+                                    'name': name, 
+                                    'grade': grade, 
+                                    'status': status, 
+                                    'token': clean_token,
+                                    'school_type': school_type
+                                }
                                 st.success(f"Logging in as {name}...")
                                 time.sleep(0.5)
                                 st.rerun()
@@ -209,30 +216,34 @@ if not st.session_state.authenticated:
                     
         with tab2:
             st.subheader("Register New Student")
-            with st.form("registration_form"):
+            
+            # Division Selection - Guaranteed Separation Logic
+            sch_col, gr_col = st.columns(2)
+            with sch_col:
+                sch_type = st.radio("School Division", ["Primary", "High School"], horizontal=True, key="sch_type_radio")
+            with gr_col:
+                # Use separate components to prevent grade overlap
+                if sch_type == "Primary":
+                    new_grade = st.selectbox("Grade / வகுப்பு (Primary)", [1, 2, 3, 4, 5], key="primary_grade_select")
+                else:
+                    new_grade = st.selectbox("Grade / வகுப்பு (High School)", [6, 7, 8, 9, 10], key="hs_grade_select")
+            
+            # Registration Details Form
+            with st.form("registration_details_form", clear_on_submit=True):
                 new_name = st.text_input("Student Full Name / மாணவர் பெயர்")
                 new_parent = st.text_input("Parent's Name / பெற்றோர் பெயர்")
-                
-                sch_col, gr_col = st.columns(2)
-                with sch_col:
-                    sch_type = st.radio("School Division", ["Primary", "High School"])
-                with gr_col:
-                    if sch_type == "Primary":
-                        new_grade = st.selectbox("Grade / வகுப்பு", [1, 2, 3, 4, 5])
-                    else:
-                        new_grade = st.selectbox("Grade / வகுப்பு", [6, 7, 8, 9, 10])
-                
                 new_year = st.text_input("Academic Year / கல்வி ஆண்டு (e.g., 2024-25)")
+                
                 submit_req = st.form_submit_button("Send Request / கோரிக்கையை அனுப்பு", use_container_width=True)
                 
                 if submit_req:
                     if new_name.strip() and new_parent.strip():
-                        req_tk = request_token(new_name, new_grade, new_parent, new_year, sch_type)
+                        req_tk = request_token(new_name.strip(), new_grade, new_parent.strip(), new_year.strip(), sch_type)
                         st.success(f"✅ **Registration Complete!** Your ID: **{req_tk}**")
                         st.info(f"📢 **Next Steps:** Tell your teacher your ID (**{req_tk}**).")
                         
                         # Telegram Alert
-                        msg = f"🏫 *New Student Access Request*\n\n*Student:* {new_name}\n*Parent:* {new_parent}\n*Grade:* {new_grade}\n*Year:* {new_year}\n*Token:* `{req_tk}`\n\n_Please approve in the Admin Panel._"
+                        msg = f"🏫 *New Student Access Request*\n\n*Student:* {new_name}\n*Parent:* {new_parent}\n*Grade:* {new_grade}\n*Division:* {sch_type}\n*Year:* {new_year}\n*Token:* `{req_tk}`\n\n_Please approve in the Admin Panel._"
                         send_telegram_alert(msg)
                     else:
                         st.warning("Please enter both Student and Parent names! / மாணவர் மற்றும் பெற்றோர் பெயர்களை உள்ளிடவும்!")
@@ -242,6 +253,7 @@ else:
     # Sidebar
     with st.sidebar:
         st.markdown(f"### {B_LANG['hello']}, {st.session_state.user_data['name']}!")
+        st.caption(f"📍 {st.session_state.user_data['school_type']} Section")
         st.divider()
         if st.button(f"🏠 {B_LANG['back']}", use_container_width=True):
             st.session_state.page = 'dashboard'
@@ -270,12 +282,13 @@ else:
             <h2 style='margin-top:20px; color:#333;'>{B_LANG['choose']}</h2>
         </div>
         """, unsafe_allow_html=True)
-        # Dashboard
-        sch_title = "Primary Learn Hub" if st.session_state.user_data['grade'] <= 5 else "High School Hub"
+        # Dashboard Routing based on School Type
+        is_hs = st.session_state.user_data['school_type'] == "High School"
+        sch_title = "High School Hub" if is_hs else "Primary Learn Hub"
         st.markdown(f"<h2 style='text-align: center; color: #34495e;'>{sch_title}</h2>", unsafe_allow_html=True)
         
         # Primary Dashboard (Grades 1-5)
-        if st.session_state.user_data['grade'] <= 5:
+        if not is_hs:
             m1, m2, m3 = st.columns(3)
             with m1:
                 if st.button(B_LANG['math']): st.session_state.page = 'math'; st.rerun()
