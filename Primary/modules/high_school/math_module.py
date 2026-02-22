@@ -11,8 +11,16 @@ def render_hs_math_module(token, grade):
     </div>
     """.format(grade=grade), unsafe_allow_html=True)
 
-    if 'hs_math_history' not in st.session_state:
-        st.session_state.hs_math_history = []
+    # Initialize all High School Math states if any are missing
+    for key in ['hs_math_q', 'hs_math_score', 'hs_math_answered', 'hs_math_history']:
+        if key not in st.session_state:
+            st.session_state.hs_math_q = 1
+            st.session_state.hs_math_score = 0
+            st.session_state.hs_math_answered = False
+            st.session_state.hs_math_result = None
+            st.session_state.current_hs_math_q = None
+            st.session_state.hs_math_history = []
+            break
 
     if st.session_state.hs_math_q <= 10:
         if st.session_state.current_hs_math_q is None:
