@@ -138,9 +138,9 @@ def render_admin_panel():
             sch_div = st.selectbox("Division", ["Primary", "High School"])
         with col3:
             if sch_div == "Primary":
-                grade = st.selectbox("Grade", [1, 2, 3, 4, 5])
+                grade = st.selectbox("Grade (Primary)", [1, 2, 3, 4, 5], key="admin_gr_primary")
             else:
-                grade = st.selectbox("Grade", [6, 7, 8, 9, 10])
+                grade = st.selectbox("Grade (High School)", [6, 7, 8, 9, 10], key="admin_gr_hs")
         
         if st.button("Generate Token"):
             if name:
