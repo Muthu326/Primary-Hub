@@ -202,18 +202,23 @@ if not st.session_state.authenticated:
             st.subheader("Register New Student")
             new_name = st.text_input("Student Full Name / மாணவர் பெயர்")
             new_parent = st.text_input("Parent's Name / பெற்றோர் பெயர்")
-            col_r1, col_r2 = st.columns(2)
-            with col_r1:
-                new_grade = st.selectbox("Current Study Class (Grade) / வகுப்பு", [1, 2, 3, 4, 5])
-            with col_r2:
-                new_year = st.text_input("Academic Year / கல்வி ஆண்டு (e.g., 2024-25)")
+            
+            sch_col, gr_col = st.columns(2)
+            with sch_col:
+                sch_type = st.radio("School Division", ["Primary", "High School"])
+            with gr_col:
+                if sch_type == "Primary":
+                    new_grade = st.selectbox("Grade / வகுப்பு", [1, 2, 3, 4, 5])
+                else:
+                    new_grade = st.selectbox("Grade / வகுப்பு", [6, 7, 8, 9, 10])
+            
+            new_year = st.text_input("Academic Year / கல்வி ஆண்டு (e.g., 2024-25)")
             
             if st.button("Send Request / கோரிக்கையை அனுப்பு", key="req_btn"):
                 if new_name and new_parent:
-                    req_tk = request_token(new_name, new_grade, new_parent, new_year)
+                    req_tk = request_token(new_name, new_grade, new_parent, new_year, sch_type)
                     st.success(f"✅ **Registration Complete!** Your ID: **{req_tk}**")
-                    st.info("📢 **Next Steps:** Please tell your teacher your ID. They will approve your access in the teacher's panel.")
-                    st.info("📢 **மாணவர்களுக்கான குறிப்பு:** உங்கள் ஐடியை (ID) உங்கள் ஆசிரியரிடம் கூறி அனுமதி பெறவும்.")
+                    st.info(f"📢 **Next Steps:** Tell your teacher your ID (**{req_tk}**).")
                     
                     # Telegram Alert
                     msg = f"🏫 *New Student Access Request*\n\n*Student:* {new_name}\n*Parent:* {new_parent}\n*Grade:* {new_grade}\n*Year:* {new_year}\n*Token:* `{req_tk}`\n\n_Please approve in the Admin Panel._"
@@ -254,28 +259,51 @@ else:
             <h2 style='margin-top:20px; color:#333;'>{B_LANG['choose']}</h2>
         </div>
         """, unsafe_allow_html=True)
-        # (Dashboard buttons here - keeping it concise as per existing logic)
-        m1, m2, m3 = st.columns(3)
-        with m1:
-            if st.button(B_LANG['math']): st.session_state.page = 'math'; st.rerun()
-        with m2:
-            if st.button(B_LANG['aptitude']): st.session_state.page = 'aptitude'; st.rerun()
-        with m3:
-            if st.button(B_LANG['typing']): st.session_state.page = 'typing'; st.rerun()
+        # Dashboard
+        sch_title = "Primary Learn Hub" if st.session_state.user_data['grade'] <= 5 else "High School Hub"
+        st.markdown(f"<h2 style='text-align: center; color: #34495e;'>{sch_title}</h2>", unsafe_allow_html=True)
         
-        m4, m5, m6 = st.columns(3)
-        with m4:
-            if st.button(B_LANG['listening']): st.session_state.page = 'listening'; st.rerun()
-        with m5:
-            if st.button(B_LANG['writing']): st.session_state.page = 'writing'; st.rerun()
-        with m6:
-            if st.button(B_LANG['speaking']): st.session_state.page = 'speaking'; st.rerun()
+        # Primary Dashboard (Grades 1-5)
+        if st.session_state.user_data['grade'] <= 5:
+            m1, m2, m3 = st.columns(3)
+            with m1:
+                if st.button(B_LANG['math']): st.session_state.page = 'math'; st.rerun()
+            with m2:
+                if st.button(B_LANG['aptitude']): st.session_state.page = 'aptitude'; st.rerun()
+            with m3:
+                if st.button(B_LANG['typing']): st.session_state.page = 'typing'; st.rerun()
+            
+            m4, m5, m6 = st.columns(3)
+            with m4:
+                if st.button(B_LANG['listening']): st.session_state.page = 'listening'; st.rerun()
+            with m5:
+                if st.button(B_LANG['writing']): st.session_state.page = 'writing'; st.rerun()
+            with m6:
+                if st.button(B_LANG['speaking']): st.session_state.page = 'speaking'; st.rerun()
+        
+        # High School Dashboard (Grades 6-10)
+        else:
+            h1, h2, h3 = st.columns(3)
+            with h1:
+                if st.button("Tamil / தமிழ் 📕"): st.session_state.page = 'hs_tamil'; st.rerun()
+            with h2:
+                if st.button("English / ஆங்கிலம் 📘"): st.session_state.page = 'hs_english'; st.rerun()
+            with h3:
+                if st.button("Mathematics / கணிதம் 🔢"): st.session_state.page = 'hs_math'; st.rerun()
+            
+            h4, h5, h6 = st.columns(3)
+            with h4:
+                if st.button("Science / அறிவியல் 🔬"): st.session_state.page = 'hs_science'; st.rerun()
+            with h5:
+                if st.button("Social Science / சமூகம் 🌍"): st.session_state.page = 'hs_social'; st.rerun()
+            with h6:
+                if st.button("Computer & Excel / கணினி 💻"): st.session_state.page = 'hs_computer'; st.rerun()
 
         st.divider()
         if st.button(B_LANG['parent'], use_container_width=True, type="primary"):
             st.session_state.page = 'parent'; st.rerun()
             
-    # Module rendering (Math, Aptitude, etc.) - abbreviated for size
+    # Module rendering
     elif st.session_state.page == 'math': render_math_module('Combined', st.session_state.user_data['token'])
     elif st.session_state.page == 'aptitude': render_aptitude_module('Combined', st.session_state.user_data['token'])
     elif st.session_state.page == 'typing': render_typing_module('Combined', st.session_state.user_data['token'])
@@ -283,3 +311,18 @@ else:
     elif st.session_state.page == 'writing': render_writing_module('Combined', st.session_state.user_data['token'])
     elif st.session_state.page == 'speaking': render_speaking_module('Combined', st.session_state.user_data['token'])
     elif st.session_state.page == 'parent': render_parent_corner(st.session_state.user_data['token'])
+    
+    # High School Modules
+    from modules.high_school.tamil_module import render_hs_tamil_module
+    from modules.high_school.english_module import render_hs_english_module
+    from modules.high_school.math_module import render_hs_math_module
+    from modules.high_school.science_module import render_hs_science_module
+    from modules.high_school.social_module import render_hs_social_module
+    from modules.high_school.computer_module import render_hs_computer_module
+
+    if st.session_state.page == 'hs_tamil': render_hs_tamil_module(st.session_state.user_data['token'], st.session_state.user_data['grade'])
+    elif st.session_state.page == 'hs_english': render_hs_english_module(st.session_state.user_data['token'], st.session_state.user_data['grade'])
+    elif st.session_state.page == 'hs_math': render_hs_math_module(st.session_state.user_data['token'], st.session_state.user_data['grade'])
+    elif st.session_state.page == 'hs_science': render_hs_science_module(st.session_state.user_data['token'], st.session_state.user_data['grade'])
+    elif st.session_state.page == 'hs_social': render_hs_social_module(st.session_state.user_data['token'], st.session_state.user_data['grade'])
+    elif st.session_state.page == 'hs_computer': render_hs_computer_module(st.session_state.user_data['token'], st.session_state.user_data['grade'])

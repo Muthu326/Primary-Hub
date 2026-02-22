@@ -20,8 +20,14 @@ def get_local_ip():
         return "127.0.0.1"
 
 def render_admin_panel():
-    st.title("👨‍🏫 Teacher / Admin Panel - Advanced Analytics")
+    # Detect Admin Division
+    admin_token = st.session_state.user_data['token']
+    admin_div = "High School" if (admin_token.startswith("GHS") or admin_token.startswith("GHT")) else "Primary"
     
+    st.title(f"👨‍🏫 {admin_div} Admin Panel")
+    if admin_token == "GHT00001":
+        st.caption("🚀 High School Super Admin Access")
+
     # Navigation Sidebar for Admin
     with st.sidebar:
         st.divider()
@@ -34,17 +40,35 @@ def render_admin_panel():
     conn = get_connection()
     df_tokens = pd.read_sql_query("SELECT * FROM tokens", conn)
     df_results = pd.read_sql_query("SELECT * FROM results", conn)
+    df_feedback = pd.read_sql_query("SELECT * FROM feedback", conn)
     conn.close()
 
-    pending_count = len(df_tokens[df_tokens['status'] == 'pending'])
+    # Filter pending count based on admin division
+    pending_df = df_tokens[df_tokens['status'] == 'pending']
+    if admin_div == "High School" and admin_token != "GHT00001":
+        pending_df = pending_df[pending_df['school_type'] == "High School"]
+    elif admin_div == "Primary":
+        pending_df = pending_df[pending_df['school_type'] == "Primary"]
+        
+    pending_count = len(pending_df)
     
-    tab_guide, tab1, tab_appr, tab2, tab3, tab_acc = st.tabs([
+    # Filter feedback for unread count
+    df_fb_merged = pd.merge(df_feedback, df_tokens[['token', 'school_type', 'student_name']], on='token', how='left')
+    unread_df = df_fb_merged[df_fb_merged['status'] == 'unread']
+    if admin_div == "High School" and admin_token != "GHT00001":
+        unread_df = unread_df[unread_df['school_type'] == "High School"]
+    elif admin_div == "Primary":
+        unread_df = unread_df[unread_df['school_type'] == "Primary"]
+    unread_count = len(unread_df)
+
+    tab_guide, tab1, tab_appr, tab_msg, tab2, tab3, tab_acc = st.tabs([
         "📖 Admin Guide",
-        "Manage All Tokens", 
-        f"Approve Requests ({pending_count}) 📝", 
-        "Full Monitoring", 
-        "Top 5 Rankings",
-        "Access & URLs 📡"
+        "Tokens", 
+        f"Approve ({pending_count})", 
+        f"Messages ({unread_count}) 📩",
+        "Monitoring", 
+        "Rankings",
+        "Access 📡"
     ])
 
     with tab_guide:
@@ -70,29 +94,39 @@ def render_admin_panel():
 
     with tab1:
         st.subheader("Create New Student Tokens")
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
             name = st.text_input("Student Name")
         with col2:
-            grade = st.selectbox("Grade", [1, 2, 3, 4, 5])
+            sch_div = st.selectbox("Division", ["Primary", "High School"])
+        with col3:
+            if sch_div == "Primary":
+                grade = st.selectbox("Grade", [1, 2, 3, 4, 5])
+            else:
+                grade = st.selectbox("Grade", [6, 7, 8, 9, 10])
         
         if st.button("Generate Token"):
             if name:
-                from utils.database import request_token # Reuse the sequential logic
-                token = request_token(name, grade, "Staff Generated", status='active')
-                # request_token already handles the DB insert
-                st.success(f"Token created for {name}: **{token}**")
+                from utils.database import request_token
+                token = request_token(name, grade, "Staff Generated", "2024-25", school_type=sch_div, status='active')
+                st.success(f"Token created for {name} ({sch_div}): **{token}**")
                 st.rerun()
             else:
                 st.warning("Please enter a student name.")
 
         st.divider()
-        st.write("### Active & Admin Tokens")
-        st.write("Full control to manage every student's access.")
+        st.write(f"### {admin_div} Student Records")
         
+        # Filter active tokens based on admin division
         active_tokens = df_tokens[df_tokens['status'] != 'pending']
+        if admin_div == "High School" and admin_token != "GHT00001":
+            active_tokens = active_tokens[active_tokens['school_type'] == "High School"]
+        elif admin_div == "Primary":
+            active_tokens = active_tokens[active_tokens['school_type'] == "Primary"]
+
         for _, row in active_tokens.iterrows():
             with st.expander(f"{row['student_name']} (Grade {row['grade']}) - {row['token']}"):
+                st.write(f"Division: **{row['school_type']}**")
                 st.write(f"Status: **{row['status'].upper()}**")
                 if row['status'] != 'admin':
                     if st.button(f"Delete/Revoke Token: {row['token']}", key=f"del_{row['token']}"):
@@ -105,12 +139,12 @@ def render_admin_panel():
                         st.rerun()
 
     with tab_appr:
-        st.subheader("New Sign-Up Requests")
-        pending = df_tokens[df_tokens['status'] == 'pending']
-        
-        if not pending.empty:
-            for index, row in pending.iterrows():
+        st.subheader(f"New {admin_div} Requests")
+        # pending_df was defined in the setup section of render_admin_panel
+        if not pending_df.empty:
+            for index, row in pending_df.iterrows():
                 with st.expander(f"Request from: {row['student_name']} (Grade {row['grade']})"):
+                    st.write(f"**Division:** {row['school_type']}")
                     st.write(f"**Token ID:** `{row['token']}`")
                     col1, col2 = st.columns(2)
                     if col1.button(f"Approve {row['token']}", key=f"appr_{row['token']}"):
@@ -130,24 +164,57 @@ def render_admin_panel():
                         st.warning(f"Rejected {row['student_name']}.")
                         st.rerun()
         else:
-            st.info("No pending requests! Everything is up to date. ✅")
+            st.info(f"No pending {admin_div} requests! ✅")
+            
+    with tab_msg:
+        st.subheader("📩 Parent Reviews & Questions")
+        # df_fb_merged was created in the setup section
+        display_fb = df_fb_merged.copy()
+        if admin_div == "High School" and admin_token != "GHT00001":
+            display_fb = display_fb[display_fb['school_type'] == "High School"]
+        elif admin_div == "Primary":
+            display_fb = display_fb[display_fb['school_type'] == "Primary"]
+            
+        if not display_fb.empty:
+            for idx, row in display_fb.sort_values(by='timestamp', ascending=False).iterrows():
+                status_icon = "🔵" if row['status'] == 'unread' else "⚪"
+                with st.expander(f"{status_icon} From: {row['student_name']} ({row['token']}) - {row['timestamp'][:16]}"):
+                    st.write(f"**Message:** {row['message']}")
+                    if row['status'] == 'unread':
+                        if st.button(f"Mark as Read", key=f"read_{idx}"):
+                            conn = get_connection()
+                            c = conn.cursor()
+                            c.execute("UPDATE feedback SET status='read' WHERE token=? AND timestamp=?", (row['token'], row['timestamp']))
+                            conn.commit()
+                            conn.close()
+                            st.rerun()
+        else:
+            st.info("No messages from parents yet.")
 
     with tab2:
-        st.subheader("🔍 Student Participation & Pass Monitoring")
+        st.subheader("🔍 Assessment & Division Monitoring")
         
         # Filtering
-        col_f1, col_f2 = st.columns(2)
+        col_f1, col_f2, col_f3 = st.columns(3)
         with col_f1:
-            filter_grade = st.selectbox("Filter by Grade", ["All", 1, 2, 3, 4, 5])
+            div_filter = st.selectbox("Filter Division", ["All", "Primary", "High School"])
         with col_f2:
+            if div_filter == "High School":
+                filter_grade = st.selectbox("Filter Grade", ["All", 6, 7, 8, 9, 10])
+            elif div_filter == "Primary":
+                filter_grade = st.selectbox("Filter Grade", ["All", 1, 2, 3, 4, 5])
+            else:
+                filter_grade = st.selectbox("Filter Grade", ["All"] + list(range(1, 11)))
+        with col_f3:
             filter_pass = st.selectbox("Pass/Fail Filter (Score >= 3)", ["All", "Pass", "Fail"])
 
-        # Apply Grade Filter
+        # Apply Filters
         df_mon = df_merged.copy()
+        if div_filter != "All":
+            df_mon = df_mon[df_mon['school_type'] == div_filter]
         if filter_grade != "All":
-            df_mon = df_mon[df_mon['grade'] == filter_grade]
-        
-        # Apply Pass Filter
+            df_mon = df_mon[df_mon['grade'] == int(filter_grade)]
+            
         if filter_pass == "Pass":
             df_mon = df_mon[df_mon['score'] >= 3]
         elif filter_pass == "Fail":
@@ -172,26 +239,40 @@ def render_admin_panel():
         st.dataframe(display_mon, use_container_width=True, hide_index=True)
 
     with tab3:
-        st.subheader("🏆 Top 5 Leaderboard")
-        target_lb = st.selectbox("Leaderboard for Grade:", ["Overall", 1, 2, 3, 4, 5])
+        st.subheader("🏆 Leaderboard & Rankings")
+        col_l1, col_l2 = st.columns(2)
+        with col_l1:
+            lb_div = st.selectbox("Rank Division:", ["All", "Primary", "High School"])
+        with col_l2:
+            if lb_div == "High School":
+                target_lb = st.selectbox("Rank Grade:", ["Overall", 6, 7, 8, 9, 10])
+            elif lb_div == "Primary":
+                target_lb = st.selectbox("Rank Grade:", ["Overall", 1, 2, 3, 4, 5])
+            else:
+                target_lb = st.selectbox("Rank Grade:", ["Overall"])
         
         df_lb = df_merged.copy()
+        if lb_div != "All":
+            df_lb = df_lb[df_lb['school_type'] == lb_div]
         if target_lb != "Overall":
             df_lb = df_lb[df_lb['grade'] == int(target_lb)]
             
         if not df_lb.empty:
-            top_students = df_lb.groupby(['student_name', 'token']).agg({
+            # Group by token to avoid name collisions
+            top_students = df_lb.groupby(['student_name', 'token', 'school_type']).agg({
                 'score': 'mean', 
                 'module': 'count'
             }).rename(columns={'score': 'Average Score', 'module': 'Tests Completed'})
             top_5 = top_students.sort_values(by='Average Score', ascending=False).head(5)
             
             for i, (idx, row) in enumerate(top_5.iterrows()):
-                st.markdown(f"#### {i+1}. {idx[0]} ({idx[1]})")
-                st.progress(row['Average Score']/5.0 if row['Average Score'] <= 5 else 1.0)
-                st.info(f"Avg Score: {row['Average Score']:.2f} | Tests: {int(row['Tests Completed'])}")
+                symbol = "🥇" if i == 0 else ("🥈" if i == 1 else ("🥉" if i == 2 else f"{i+1}."))
+                st.markdown(f"#### {symbol} {idx[0]} (`{idx[1]}`)")
+                st.caption(f"Division: {idx[2]}")
+                st.progress(row['Average Score']/10.0 if row['Average Score'] <= 10 else 1.0)
+                st.info(f"Avg Score: {row['Average Score']:.2f}/10 | Tests: {int(row['Tests Completed'])}")
         else:
-            st.info("No results found.")
+            st.info("No assessment data available for this selection.")
 
     with tab_acc:
         st.subheader("Student Access Dashboard")

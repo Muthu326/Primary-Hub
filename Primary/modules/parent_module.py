@@ -65,9 +65,19 @@ def render_parent_corner(token):
         parent_query = st.text_area("Enter your question or request / உங்கள் கேள்வி அல்லது கோரிக்கையை உள்ளிடவும்")
         if st.button("Send to Teacher / அனுப்பவும்"):
             if parent_query:
-                st.success("Your message has been logged! Your teacher can view this in the monitoring dashboard.")
+                from utils.database import save_feedback
+                from utils.telegram_bot import send_telegram_alert
+                
+                # Save to DB
+                save_feedback(token, parent_query)
+                
+                # Send Telegram Alert
+                msg = f"📩 *New Message from Parent*\n\n*Student Token:* `{token}`\n*Message:* {parent_query}\n\n_Please check the Admin Panel to reply._"
+                send_telegram_alert(msg)
+                
+                st.success("✅ Your message has been sent to the teacher! / உங்கள் செய்தி ஆசிரியருக்கு அனுப்பப்பட்டது!")
             else:
-                st.warning("Please write something first.")
+                st.warning("Please write something first. / தயவுசெய்து எதாவது எழுதவும்.")
 
     st.divider()
     if st.button("Back to Dashboard / முகப்பிற்குத் திரும்பவும்"):

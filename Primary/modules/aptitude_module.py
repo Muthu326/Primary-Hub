@@ -21,61 +21,74 @@ def render_aptitude_module(language, token):
         st.session_state.current_apt_q = None
 
     if st.session_state.apt_q <= 10:
-        # Generate question if not exists for this step
+        # Generate visual/figure puzzle if not exists
         if st.session_state.current_apt_q is None:
-            if st.session_state.apt_q <= 3: # Easy
-                patterns = [
-                    ("🍎 🍌 🍎 🍌 ... ?", "🍎"),
-                    ("⭐ 🌙 ⭐ 🌙 ... ?", "⭐"),
-                    ("🐶 🐱 🐶 🐱 ... ?", "🐶"),
-                    ("🌞 ☁️ 🌞 ☁️ ... ?", "🌞")
-                ]
-            elif st.session_state.apt_q <= 7: # Moderate
-                patterns = [
-                    ("1 2 3 1 2 ... ?", "3"),
-                    ("A B A B C A B ... ?", "A"),
-                    ("Circle Square Circle ... ?", "Square"),
-                    ("Up Down Up Down ... ?", "Up")
-                ]
-            else: # Hard
-                patterns = [
-                    ("2 4 6 8 ... ?", "10"),
-                    ("5 10 15 20 ... ?", "25"),
-                    ("A C E G ... ?", "I"),
-                    ("10 9 8 7 ... ?", "6")
-                ]
-            st.session_state.current_apt_q = random.choice(patterns)
+            # Category 1: Figure Patterns (Visual Sequences)
+            patterns = [
+                {"q": "🐱 🐶 🐱 🐶 ... ?", "a": "🐱", "o": ["🐱", "🐶", "🦊"], "type": "Pattern"},
+                {"q": "🐘 🦒 🐘 🦒 ... ?", "a": "🐘", "o": ["🐘", "🦒", "🦓"], "type": "Pattern"},
+                {"q": "🟥 🟦 🟥 🟦 ... ?", "a": "🟥", "o": ["🟥", "🟦", "🟩"], "type": "Pattern"},
+                {"q": "⚽ 🏀 ⚽ 🏀 ... ?", "a": "⚽", "o": ["⚽", "🏀", "🎾"], "type": "Pattern"},
+                {"q": "🚗 🚲 🚗 🚲 ... ?", "a": "🚗", "o": ["🚗", "🚲", "✈️"], "type": "Pattern"}
+            ]
+            
+            # Category 2: Directional Logic (Figures in space)
+            directions = [
+                {"q": "⬆️ ➡️ ⬇️ ... ?", "a": "⬅️", "o": ["⬅️", "⬆️", "⬇️"], "type": "Logic"},
+                {"q": "🔼 ◀️ 🔽 ... ?", "a": "▶️", "o": ["▶️", "◀️", "🔼"], "type": "Logic"},
+                {"q": "↖️ ↗️ ↘️ ... ?", "a": "↙️", "o": ["↙️", "↖️", "↘️"], "type": "Logic"}
+            ]
+            
+            # Category 3: Visual Odd One Out
+            vision = [
+                {"q": "Which one is different? / எது மாறுபடுகிறது?", "a": "🍐", "o": ["🍎", "🍐", "🍊"], "body": "🍎 🍎 🍐 🍎", "type": "Vision"},
+                {"q": "Which one is different? / எது மாறுபடுகிறது?", "a": "🐱", "o": ["🐶", "🐱", "🐭"], "body": "🐶 🐶 🐱 🐶", "type": "Vision"},
+                {"q": "Which one is different? / எது மாறுபடுகிறது?", "a": "🚢", "o": ["✈️", "🚢", "🚁"], "body": "✈️ ✈️ ✈️ 🚢", "type": "Vision"},
+                {"q": "Which one is different? / எது மாறுபடுகிறது?", "a": "🔵", "o": ["🔴", "🔵", "🔘"], "body": "🔴 🔴 🔵 🔴", "type": "Vision"}
+            ]
+            
+            all_puzzles = patterns + directions + vision
+            st.session_state.current_apt_q = random.choice(all_puzzles)
 
-        pat, ans = st.session_state.current_apt_q
+        puzzle = st.session_state.current_apt_q
+        pat = puzzle['q']
+        ans = puzzle['a']
+        options = puzzle['o']
         
         col1, col2 = st.columns([1, 2])
         
         with col1:
-            st.markdown("#### Progress")
+            st.markdown("#### Progress / முன்னேற்றம்")
             st.write(f"Puzzle: **{st.session_state.apt_q}/10**")
             st.progress(st.session_state.apt_q / 10)
             
-            # Difficulty indicator
-            diff_color = "#4CAF50" if st.session_state.apt_q <= 3 else ("#FF9800" if st.session_state.apt_q <= 7 else "#F44336")
-            diff_text = "Level 1" if st.session_state.apt_q <= 3 else ("Level 2" if st.session_state.apt_q <= 7 else "Level 3")
-            st.markdown(f"<div style='background: {diff_color}; color: white; padding: 5px 10px; border-radius: 5px; text-align: center; font-weight: bold;'>{diff_text}</div>", unsafe_allow_html=True)
+            # Category Indicator
+            cat_color = "#4CAF50" if puzzle['type'] == "Pattern" else ("#2196F3" if puzzle['type'] == "Logic" else "#E91E63")
+            st.markdown(f"<div style='background: {cat_color}; color: white; padding: 5px 10px; border-radius: 5px; text-align: center; font-weight: bold;'>{puzzle['type']}</div>", unsafe_allow_html=True)
             
         with col2:
-            st.subheader("Which comes next? / அடுத்து வருவது எது?")
-            st.info(f"### {pat}")
+            st.subheader(pat)
+            if 'body' in puzzle:
+                st.markdown(f"<p style='font-size: 40px; text-align: center; background: #f0f2f6; padding: 20px; border-radius: 10px;'>{puzzle['body']}</p>", unsafe_allow_html=True)
+            else:
+                st.info(f"### {pat}")
             
-            user_choice = st.text_input("Your Answer / உங்கள் பதில்:", placeholder="Type here...", key=f"apt_ans_{st.session_state.apt_q}", disabled=st.session_state.apt_answered)
+            st.write("### Choose the right figure / சரியான உருவத்தைத் தேர்ந்தெடுக்கவும்:")
+            
+            # Use columns for choice buttons
+            btn_cols = st.columns(len(options))
             
             if not st.session_state.apt_answered:
-                if st.button("Submit / சமர்ப்பிக்கவும்", use_container_width=True):
-                    st.session_state.apt_answered = True
-                    if user_choice.strip().upper() == ans.upper():
-                        st.session_state.apt_result = "correct"
-                        st.session_state.apt_score += 1
-                    else:
-                        st.session_state.apt_result = "incorrect"
-                        st.session_state.apt_final_ans = ans # Store correct answer to show
-                    st.rerun()
+                for i, opt in enumerate(options):
+                    if btn_cols[i].button(opt, key=f"apt_btn_{i}_{st.session_state.apt_q}", use_container_width=True):
+                        st.session_state.apt_answered = True
+                        if opt == ans:
+                            st.session_state.apt_result = "correct"
+                            st.session_state.apt_score += 1
+                        else:
+                            st.session_state.apt_result = "incorrect"
+                            st.session_state.apt_final_ans = ans
+                        st.rerun()
             else:
                 if st.session_state.apt_result == "correct":
                     st.success("Brilliant! / அற்புதம்! 🌟")
