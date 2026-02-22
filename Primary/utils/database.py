@@ -39,15 +39,17 @@ def init_db():
     
     # Check if table needs migration (adding columns if necessary in future, but for now it's okay)
     
-    # Pre-populate with specialized admins
-    c.execute("SELECT COUNT(*) FROM tokens WHERE status='admin'")
-    if c.fetchone()[0] == 0:
-        admins = [
-            ('ADMIN100', 'Primary Admin', 0, 'admin', 'N/A', '2024-25', 'Primary'),
-            ('GHSADMIN01', 'High School Admin', 0, 'admin', 'N/A', '2024-25', 'High School'),
-            ('GHT00001', 'HS Super Admin', 0, 'admin', 'N/A', '2024-25', 'High School')
-        ]
-        c.executemany("INSERT INTO tokens (token, student_name, grade, status, parent_name, academic_year, school_type) VALUES (?, ?, ?, ?, ?, ?, ?)", admins)
+    # Pre-populate with specialized admins individually
+    admins = [
+        ('ADMIN100', 'Primary Admin', 0, 'admin', 'N/A', '2024-25', 'Primary'),
+        ('GHSADMIN01', 'High School Admin', 0, 'admin', 'N/A', '2024-25', 'High School'),
+        ('GHT00001', 'HS Super Admin', 0, 'admin', 'N/A', '2024-25', 'High School')
+    ]
+    
+    for admin in admins:
+        c.execute("SELECT COUNT(*) FROM tokens WHERE token=?", (admin[0],))
+        if c.fetchone()[0] == 0:
+            c.execute("INSERT INTO tokens (token, student_name, grade, status, parent_name, academic_year, school_type) VALUES (?, ?, ?, ?, ?, ?, ?)", admin)
         
     conn.commit()
     conn.close()

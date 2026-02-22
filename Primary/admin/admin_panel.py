@@ -62,7 +62,7 @@ def render_admin_panel():
     unread_count = len(unread_df)
 
     tab_guide, tab1, tab_appr, tab_msg, tab2, tab3, tab_acc = st.tabs([
-        "📖 Admin Guide",
+        "📊 School Overview",
         "Tokens", 
         f"Approve ({pending_count})", 
         f"Messages ({unread_count}) 📩",
@@ -71,26 +71,63 @@ def render_admin_panel():
         "Access 📡"
     ])
 
-    with tab_guide:
-        st.info("### 🛡️ How to Manage Your School Hub")
-        st.markdown("""
-        **Step 1: Student Sign-Up**
-        - Students go to the website and click **'Request New Access'**.
-        - They enter their **Name, Parent's Name, Class,** and **Year**.
-        
-        **Step 2: Your Approval (Crucial)**
-        - You will get a **Telegram Alert** on your phone.
-        - Go to the **'Approve Requests'** tab here.
-        - Click **'Approve'** to let them in.
-        
-        **Step 3: Monitor Progress**
-        - Go to **'Full Monitoring'** to see scores in real-time.
-        - Use the **'Access & URLs'** tab to show students where to log in.
-        """)
-        st.success("💡 **Tip:** Keep this panel open on your main computer during class!")
-
     # Merge data for better monitoring
     df_merged = pd.merge(df_results, df_tokens, on='token', how='left')
+
+    with tab_guide:
+        st.subheader("🚀 School Operational Overview")
+        
+        # 1. Top Level Metrics
+        m1, m2, m3, m4 = st.columns(4)
+        total_active = len(df_tokens[df_tokens['status'] == 'active'])
+        avg_score = df_results['score'].mean() if not df_results.empty else 0
+        pass_count = len(df_results[df_results['score'] >= 3])
+        pass_rate = (pass_count / len(df_results) * 100) if not df_results.empty else 0
+        
+        m1.metric("Active Students", total_active)
+        m2.metric("Overall Avg Score", f"{avg_score:.1f}/10")
+        m3.metric("Pass Rate (%)", f"{pass_rate:.1f}%")
+        m4.metric("Pending Approvals", pending_count)
+        
+        st.divider()
+        
+        col_left, col_right = st.columns(2)
+        
+        with col_left:
+            st.write("### 📉 Critical Students (Need Support)")
+            if not df_merged.empty:
+                # Identify students with average score < 3
+                crit_df = df_merged.groupby(['student_name', 'grade', 'token']).agg({'score': 'mean'}).reset_index()
+                crit_df = crit_df[crit_df['score'] < 3].sort_values(by='score')
+                
+                if not crit_df.empty:
+                    for idx, row in crit_df.iterrows():
+                        st.warning(f"**{row['student_name']}** (Class {row['grade']}): Avg Score **{row['score']:.1f}/10**")
+                else:
+                    st.success("No students currently in critical range! 🎉")
+            else:
+                st.info("Waiting for assessment data...")
+
+        with col_right:
+            st.write("### 🏫 Class-wise Performance")
+            if not df_merged.empty:
+                def get_class_stats(group):
+                    avg = group['score'].mean()
+                    tests = len(group)
+                    passed = len(group[group['score'] >= 3])
+                    pass_rate = (passed / tests * 100) if tests > 0 else 0
+                    return pd.Series({'Avg Score': f"{avg:.1f}", 'Pass Rate': f"{pass_rate:.1f}%", 'Tests': tests})
+                
+                class_perf = df_merged.groupby('grade').apply(get_class_stats).reset_index()
+                st.dataframe(class_perf.set_index('grade'), use_container_width=True)
+            else:
+                st.info("No class data available yet.")
+
+        st.write("### 📈 Student Distribution")
+        if not df_tokens.empty:
+            dist_df = df_tokens[df_tokens['status'] == 'active'].groupby('school_type').agg({'token': 'count'}).reset_index()
+            dist_df.columns = ['Division', 'Student Count']
+            st.bar_chart(dist_df.set_index('Division'))
 
     with tab1:
         st.subheader("Create New Student Tokens")
