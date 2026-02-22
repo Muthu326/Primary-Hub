@@ -209,31 +209,33 @@ if not st.session_state.authenticated:
                     
         with tab2:
             st.subheader("Register New Student")
-            new_name = st.text_input("Student Full Name / மாணவர் பெயர்")
-            new_parent = st.text_input("Parent's Name / பெற்றோர் பெயர்")
-            
-            sch_col, gr_col = st.columns(2)
-            with sch_col:
-                sch_type = st.radio("School Division", ["Primary", "High School"])
-            with gr_col:
-                if sch_type == "Primary":
-                    new_grade = st.selectbox("Grade / வகுப்பு", [1, 2, 3, 4, 5])
-                else:
-                    new_grade = st.selectbox("Grade / வகுப்பு", [6, 7, 8, 9, 10])
-            
-            new_year = st.text_input("Academic Year / கல்வி ஆண்டு (e.g., 2024-25)")
-            
-            if st.button("Send Request / கோரிக்கையை அனுப்பு", key="req_btn"):
-                if new_name and new_parent:
-                    req_tk = request_token(new_name, new_grade, new_parent, new_year, sch_type)
-                    st.success(f"✅ **Registration Complete!** Your ID: **{req_tk}**")
-                    st.info(f"📢 **Next Steps:** Tell your teacher your ID (**{req_tk}**).")
-                    
-                    # Telegram Alert
-                    msg = f"🏫 *New Student Access Request*\n\n*Student:* {new_name}\n*Parent:* {new_parent}\n*Grade:* {new_grade}\n*Year:* {new_year}\n*Token:* `{req_tk}`\n\n_Please approve in the Admin Panel._"
-                    send_telegram_alert(msg)
-                else:
-                    st.warning("Please enter both Student and Parent names! / மாணவர் மற்றும் பெற்றோர் பெயர்களை உள்ளிடவும்!")
+            with st.form("registration_form"):
+                new_name = st.text_input("Student Full Name / மாணவர் பெயர்")
+                new_parent = st.text_input("Parent's Name / பெற்றோர் பெயர்")
+                
+                sch_col, gr_col = st.columns(2)
+                with sch_col:
+                    sch_type = st.radio("School Division", ["Primary", "High School"])
+                with gr_col:
+                    if sch_type == "Primary":
+                        new_grade = st.selectbox("Grade / வகுப்பு", [1, 2, 3, 4, 5])
+                    else:
+                        new_grade = st.selectbox("Grade / வகுப்பு", [6, 7, 8, 9, 10])
+                
+                new_year = st.text_input("Academic Year / கல்வி ஆண்டு (e.g., 2024-25)")
+                submit_req = st.form_submit_button("Send Request / கோரிக்கையை அனுப்பு", use_container_width=True)
+                
+                if submit_req:
+                    if new_name.strip() and new_parent.strip():
+                        req_tk = request_token(new_name, new_grade, new_parent, new_year, sch_type)
+                        st.success(f"✅ **Registration Complete!** Your ID: **{req_tk}**")
+                        st.info(f"📢 **Next Steps:** Tell your teacher your ID (**{req_tk}**).")
+                        
+                        # Telegram Alert
+                        msg = f"🏫 *New Student Access Request*\n\n*Student:* {new_name}\n*Parent:* {new_parent}\n*Grade:* {new_grade}\n*Year:* {new_year}\n*Token:* `{req_tk}`\n\n_Please approve in the Admin Panel._"
+                        send_telegram_alert(msg)
+                    else:
+                        st.warning("Please enter both Student and Parent names! / மாணவர் மற்றும் பெற்றோர் பெயர்களை உள்ளிடவும்!")
         st.markdown("</div>", unsafe_allow_html=True)
 
 else:
